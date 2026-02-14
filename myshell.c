@@ -15,9 +15,18 @@ int main() {
         if (fgets(input, MAX_BUFFER, stdin) == NULL) {
             break; // Exit with ctrl d
         }
+        // remove the newline at the end (so comparisons work)
+        input[strcspn(input, "\n")] = '\0';
+
+        // built-in: quit
+        if (strcmp(input, "quit") == 0) {
+            printf("quit successful\n");
+            break;
+        }
+           
 
         //temporary test
-        printf("You typed: %s", input);
+        printf("You typed: %s\n", input);
     }
     return 0;
-}./myshell
+}
