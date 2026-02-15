@@ -4,6 +4,9 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 extern char **environ;
 
@@ -132,6 +135,44 @@ void handle_help() {
     system("more help.txt");
 }
 
+int make_args(char *input, char *argv[]) {
+    int argc = 0;
+
+    argv[argc] = strtok(input, " \t");
+    while (argv[argc] != NULL && argc < 63) {
+        argc++;
+        argv[argc] = strtok(NULL, " \t");
+    }
+
+    return argc;
+}
+
+void run_external(char *input) {
+    char *argv[64];
+    pid_t pid;
+    int status;
+
+    int argc = make_args(input, argv);
+    if (argc == 0) return; // empty line
+
+    pid = fork();
+
+    if (pid < 0) {
+        perror("fork");
+        return;
+    }
+
+    if (pid == 0) {
+        // child runs the program
+        execvp(argv[0], argv);
+        perror("execvp"); // only runs if exec fails
+        exit(1);
+    } else {
+        // parent waits so we don't create zombies
+        waitpid(pid, &status, 0);
+    }
+}
+
 
 
 
@@ -200,10 +241,13 @@ int main() {
         continue;
 }
 
+        //run as external command
+        run_external(input);
 
 
         //temporary test
         printf("You typed: %s\n", input);
     }
+    
     return 0;
 }
