@@ -6,6 +6,8 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fcntl.h>
+
 
 
 extern char **environ;
@@ -173,6 +175,45 @@ int check_background(char *input) {
     return 0; // not background
 }
 
+int setup_output_redirect(char *input) {
+    // returns a file descriptor for stdout, or -1 if no redirect
+    char *pos = strstr(input, ">>");
+    int append = 0;
+
+    if (pos != NULL) {
+        append = 1;
+    } else {
+        pos = strchr(input, '>');
+        append = 0;
+    }
+
+    if (pos == NULL) return -1;
+
+    // split the string at > or >>
+    *pos = '\0';
+    if (append) pos++; // move past first '>'
+    pos++;             // move past second '>' if append, or the only '>' if not
+
+    while (*pos == ' ' || *pos == '\t') pos++; // skip spaces
+
+    if (*pos == '\0') {
+        printf("Redirection error: missing output file\n");
+        return -1;
+    }
+
+    int flags = O_CREAT | O_WRONLY;
+    if (append) flags |= O_APPEND;
+    else flags |= O_TRUNC;
+
+    int fd = open(pos, flags, 0644);
+    if (fd < 0) {
+        perror("open");
+        return -1;
+    }
+
+    return fd;
+}
+
 
 void run_external(char *input) {
     char *argv[64];
@@ -181,6 +222,9 @@ void run_external(char *input) {
 
     int background = check_background(input);
 
+    // check if there is > or >>
+    int out_fd = setup_output_redirect(input);
+
     int argc = make_args(input, argv);
     if (argc == 0) return; // empty line
 
@@ -188,15 +232,27 @@ void run_external(char *input) {
 
     if (pid < 0) {
         perror("fork");
+        if (out_fd != -1) close(out_fd);
         return;
     }
 
     if (pid == 0) {
         // child runs the program
+
+        if (out_fd != -1) {
+            dup2(out_fd, 1); // redirect stdout
+            close(out_fd);
+        }
+
         execvp(argv[0], argv);
         perror("execvp");
         exit(1);
     } else {
+        // parent closes its copy
+        if (out_fd != -1) {
+            close(out_fd);
+        }
+
         // parent waits only if not background
         if (!background) {
             waitpid(pid, &status, 0);
@@ -205,6 +261,7 @@ void run_external(char *input) {
         }
     }
 }
+
 
 
 
