@@ -177,10 +177,28 @@ void run_external(char *input) {
 
 
 
-int main() {
+int main(int argc, char *argv[]) {
+
+        FILE *in = stdin;
+    int interactive = 1;
+
+    if (argc == 2) {
+        in = fopen(argv[1], "r");
+        if (in == NULL) {
+            perror("batch file");
+        return 1;
+    }
+    interactive = 0;
+} else if (argc > 2) {
+    printf("Usage: %s [batchfile]\n", argv[0]);
+    return 1;
+}
+
     char input[MAX_BUFFER];
 
     while (1) {
+     if (interactive) {
+
         //print
      char cwd[MAX_BUFFER];
 
@@ -189,11 +207,12 @@ int main() {
         } else {
           printf("MyShell> "); // fallback if getcwd fails
             }
-        fflush(stdout);
+        fflush(stdout); 
+    }
 
 
         //read Input
-        if (fgets(input, MAX_BUFFER, stdin) == NULL) {
+        if (fgets(input, MAX_BUFFER, in) == NULL) {
             break; // Exit with ctrl d
         }
         input[strcspn(input, "\n")] = '\0';
@@ -245,8 +264,7 @@ int main() {
         run_external(input);
 
 
-        //temporary test
-        printf("You typed: %s\n", input);
+
     }
     
     return 0;
