@@ -5,7 +5,7 @@
 #include <dirent.h>
 #include <errno.h>
 
-
+extern char **environ;
 
 #define MAX_BUFFER 1024
 
@@ -66,6 +66,37 @@ void handle_dir(char *input) {
     closedir(d);
 }
 
+void handle_environ() {
+    char **env = environ;
+
+    while (*env != NULL) {
+        printf("%s\n", *env);
+        env++;
+    }
+}
+
+void handle_set(char *input) {
+    // expected: set VAR VALUE
+    char var[128];
+    char value[512];
+
+    // try to read "set <var> <value>"
+    if (sscanf(input, "set %127s %511[^\n]", var, value) != 2) {
+        printf("Usage: set VARIABLE VALUE\n");
+        return;
+    }
+
+    if (setenv(var, value, 1) != 0) {
+        perror("set");
+    }
+}
+
+
+
+
+
+
+
 int main() {
     char input[MAX_BUFFER];
 
@@ -102,6 +133,18 @@ int main() {
             handle_dir(input);
             continue;
         }   
+        //environ
+        if (strcmp(input, "environ") == 0) {
+            handle_environ();
+            continue;
+        }
+
+        // set
+        if (strncmp(input, "set", 3) == 0 && (input[3] == '\0' || input[3] == ' ')) {
+        handle_set(input);
+        continue;
+        }
+
 
         //temporary test
         printf("You typed: %s\n", input);
