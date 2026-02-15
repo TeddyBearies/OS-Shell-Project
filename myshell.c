@@ -147,10 +147,39 @@ int make_args(char *input, char *argv[]) {
     return argc;
 }
 
+int check_background(char *input) {
+    int len = strlen(input);
+
+    // remove spaces
+    while (len > 0 && (input[len - 1] == ' ' || input[len - 1] == '\t')) {
+        input[len - 1] = '\0';
+        len--;
+    }
+
+    // check for &
+    if (len > 0 && input[len - 1] == '&') {
+        input[len - 1] = '\0'; // remove &
+        
+        // remove spaces again after removing &
+        len--;
+        while (len > 0 && (input[len - 1] == ' ' || input[len - 1] == '\t')) {
+            input[len - 1] = '\0';
+            len--;
+        }
+
+        return 1; // background
+    }
+
+    return 0; // not background
+}
+
+
 void run_external(char *input) {
     char *argv[64];
     pid_t pid;
     int status;
+
+    int background = check_background(input);
 
     int argc = make_args(input, argv);
     if (argc == 0) return; // empty line
@@ -165,13 +194,20 @@ void run_external(char *input) {
     if (pid == 0) {
         // child runs the program
         execvp(argv[0], argv);
-        perror("execvp"); // only runs if exec fails
+        perror("execvp");
         exit(1);
     } else {
-        // parent waits so we don't create zombies
-        waitpid(pid, &status, 0);
+        // parent waits only if not background
+        if (!background) {
+            waitpid(pid, &status, 0);
+        } else {
+            printf("[background pid %d]\n", pid);
+        }
     }
 }
+
+
+
 
 
 
