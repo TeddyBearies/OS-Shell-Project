@@ -295,9 +295,27 @@ void run_external(char *input) {
     }
 }
 
+int begin_builtin_redirect(char *input, int *saved_stdout) {
+    int out_fd = setup_output_redirect(input);
+    if (out_fd == -1) {
+        return 0; // no redirection
+    }
 
+    // save current stdout
+    *saved_stdout = dup(1);
 
+    // send stdout to the file
+    dup2(out_fd, 1);
+    close(out_fd);
 
+    return 1; // redirection is active
+}
+
+void end_builtin_redirect(int saved_stdout) {
+    // restore original stdout
+    dup2(saved_stdout, 1);
+    close(saved_stdout);
+}
 
 
 
@@ -355,14 +373,31 @@ int main(int argc, char *argv[]) {
         }   
         //dir
         if (strncmp(input, "dir", 3) == 0 && (input[3] == '\0' || input[3] == ' ')) {
+            int saved_stdout;
+            int redirected = begin_builtin_redirect(input, &saved_stdout);
+
             handle_dir(input);
-            continue;
-        }   
-        //environ
-        if (strcmp(input, "environ") == 0) {
-            handle_environ();
+
+            if (redirected) {
+                end_builtin_redirect(saved_stdout);
+            }
             continue;
         }
+
+
+        //environ
+        if (strncmp(input, "environ", 7) == 0 && (input[7] == '\0' || input[7] == ' ')) {
+            int saved_stdout;
+            int redirected = begin_builtin_redirect(input, &saved_stdout);
+
+            handle_environ();
+
+            if (redirected) {
+                end_builtin_redirect(saved_stdout);
+            }
+            continue;
+        }
+
 
         // set
         if (strncmp(input, "set", 3) == 0 && (input[3] == '\0' || input[3] == ' ')) {
@@ -376,15 +411,31 @@ int main(int argc, char *argv[]) {
         }
 
         //echo
-    if (strncmp(input, "echo", 4) == 0 && (input[4] == '\0' || input[4] == ' ' || input[4] == '\t')) {
-        handle_echo(input);
-        continue;
+        if (strncmp(input, "echo", 4) == 0 && (input[4] == '\0' || input[4] == ' ' || input[4] == '\t')) {
+            int saved_stdout;
+            int redirected = begin_builtin_redirect(input, &saved_stdout);
+
+            handle_echo(input);
+
+            if (redirected) {
+                end_builtin_redirect(saved_stdout);
+            }
+            continue;
         }
+
         //help
-    if (strcmp(input, "help") == 0) {
-        handle_help();
-        continue;
-}
+        if (strncmp(input, "help", 4) == 0 && (input[4] == '\0' || input[4] == ' ')) {
+            int saved_stdout;
+            int redirected = begin_builtin_redirect(input, &saved_stdout);
+
+            handle_help();
+
+            if (redirected) {
+                end_builtin_redirect(saved_stdout);
+            }
+            continue;
+        }
+
 
         //run as external command
         run_external(input);
