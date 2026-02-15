@@ -34,7 +34,7 @@ void handle_cd(char *input) {
         return;
     }
 
-    // update PWD variable after successful chdir
+    // update PWD variable after chdir
     char newCwd[1024];
     if (getcwd(newCwd, sizeof(newCwd)) != NULL) {
         setenv("PWD", newCwd, 1);
@@ -76,7 +76,7 @@ void handle_environ() {
 }
 
 void handle_set(char *input) {
-    // expected: set VAR VALUE
+    
     char var[128];
     char value[512];
 
@@ -91,6 +91,41 @@ void handle_set(char *input) {
     }
 }
 
+void handle_pause() {
+    printf("PAUSED - Press Enter to unpause:");
+    fflush(stdout);
+
+    // read until newline
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) {
+        // do nothing
+    }
+}
+
+void handle_echo(char *input) {
+    // input looks like: "echo something here"
+    char *msg = input + 4; // move past "echo"
+
+    while (*msg == ' ' || *msg == '\t') msg++; // skip spaces/tabs after echo
+
+    // print message with space/tab cleanup
+    int lastWasSpace = 0;
+
+    while (*msg != '\0') {
+        if (*msg == ' ' || *msg == '\t') {
+            if (!lastWasSpace) {
+                putchar(' ');
+                lastWasSpace = 1;
+            }
+        } else {
+            putchar(*msg);
+            lastWasSpace = 0;
+        }
+        msg++;
+    }
+
+    putchar('\n');
+}
 
 
 
@@ -142,6 +177,17 @@ int main() {
         // set
         if (strncmp(input, "set", 3) == 0 && (input[3] == '\0' || input[3] == ' ')) {
         handle_set(input);
+        continue;
+        }
+        //pause
+    if (strcmp(input, "pause") == 0) {
+        handle_pause();
+        continue;
+        }
+
+        //echo
+    if (strncmp(input, "echo", 4) == 0 && (input[4] == '\0' || input[4] == ' ' || input[4] == '\t')) {
+        handle_echo(input);
         continue;
         }
 
