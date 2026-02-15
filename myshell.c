@@ -214,6 +214,30 @@ int setup_output_redirect(char *input) {
     return fd;
 }
 
+int setup_input_redirect(char *input) {
+    // returns fd for stdin, or -1 if no redirect
+    char *pos = strchr(input, '<');
+    if (pos == NULL) return -1;
+
+    *pos = '\0'; // cut command part
+    pos++;       // move past '<'
+
+    while (*pos == ' ' || *pos == '\t') pos++; // skip spaces
+
+    if (*pos == '\0') {
+        printf("Redirection error: missing input file\n");
+        return -1;
+    }
+
+    int fd = open(pos, O_RDONLY);
+    if (fd < 0) {
+        perror("open");
+        return -1;
+    }
+
+    return fd;
+}
+
 
 void run_external(char *input) {
     char *argv[64];
@@ -224,7 +248,8 @@ void run_external(char *input) {
 
     // check if there is > or >>
     int out_fd = setup_output_redirect(input);
-
+    int in_fd = setup_input_redirect(input);
+    
     int argc = make_args(input, argv);
     if (argc == 0) return; // empty line
 
@@ -244,6 +269,11 @@ void run_external(char *input) {
             close(out_fd);
         }
 
+        if (in_fd != -1) {
+            dup2(in_fd, 0); // redirect stdin
+            close(in_fd);
+        }
+
         execvp(argv[0], argv);
         perror("execvp");
         exit(1);
@@ -251,6 +281,9 @@ void run_external(char *input) {
         // parent closes its copy
         if (out_fd != -1) {
             close(out_fd);
+        }
+        if (in_fd != -1) {
+            close(in_fd);
         }
 
         // parent waits only if not background
