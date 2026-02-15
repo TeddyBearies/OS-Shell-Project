@@ -127,6 +127,10 @@ void handle_echo(char *input) {
     putchar('\n');
 }
 
+//open help.txt with more
+void handle_help() {
+    system("more help.txt");
+}
 
 
 
@@ -190,6 +194,12 @@ int main() {
         handle_echo(input);
         continue;
         }
+        //help
+    if (strcmp(input, "help") == 0) {
+        handle_help();
+        continue;
+}
+
 
 
         //temporary test

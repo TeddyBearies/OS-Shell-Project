@@ -1,0 +1,32 @@
+MyShell (OS Task 1)
+
+This is a simple shell made for the assignment.
+
+Built in commands:
+- quit
+  exits the shell
+
+- cd [dir]
+  changes directory
+  if you type just cd, it prints where you are
+
+- dir [dir]
+  lists files/folders in a directory
+  if no dir is given, it lists the current one
+
+- environ
+  prints all environment variables
+
+- set VAR VALUE
+  sets/creates an environment variable
+
+- echo [text]
+  prints the text back (spaces/tabs get cleaned a bit)
+
+- pause
+  waits until you press Enter
+
+- help
+  shows this page (using more)
+
+note: Work in Progress
